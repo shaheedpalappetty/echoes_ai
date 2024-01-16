@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/io.dart';
@@ -9,16 +11,27 @@ class ChatManager {
   final bot = const types.User(id: 'model', firstName: "Gemini");
   bool isLoading = false;
   late WebSocketChannel channel;
-
+  final hostedUrl = 'ws://echoes-ai.onrender.com/ws';
+  final localUrl = 'ws://10.0.2.2:8000/ws';
   void initializeWebSocket() {
-    channel = IOWebSocketChannel.connect('ws://10.0.2.2:8000/ws');
+    channel = IOWebSocketChannel.connect(hostedUrl);
   }
 
-  void addMessage(types.Message message) {
+  void addMessage(types.Message message, [bytes]) {
+    print("inside Function");
     messages.insert(0, message);
     isLoading = true;
     if (message is types.TextMessage) {
-      channel.sink.add(message.text);
+      if (bytes != null) {
+        final jsonMessage = jsonEncode({"text": "explain", "image": bytes});
+        print(jsonMessage);
+        channel.sink.add(jsonMessage);
+      } else {
+        channel.sink.add(jsonEncode({
+          "text": message.text,
+        }));
+      }
+
       messages.insert(
         0,
         types.TextMessage(
